@@ -1,0 +1,58 @@
+module serial_adder (
+    input [3:0] A, B,
+    input Cin,
+    output [3:0] Sum,
+    output Cout
+);
+    wire c0, c1, c2;
+
+    full_adder fa0 (.A(A[0]), .B(B[0]), .Cin(Cin), .Sum(Sum[0]), .Cout(c0));
+    full_adder fa1 (.A(A[1]), .B(B[1]), .Cin(c0), .Sum(Sum[1]), .Cout(c1));
+    full_adder fa2 (.A(A[2]), .B(B[2]), .Cin(c1), .Sum(Sum[2]), .Cout(c2));
+    full_adder fa3 (.A(A[3]), .B(B[3]), .Cin(c2), .Sum(Sum[3]), .Cout(Cout));
+endmodule
+module half_adder (
+    input A, B,
+    output Sum, Carry
+);
+    xor (Sum, A, B);
+    and (Carry, A, B);
+endmodule
+
+module full_adder (
+    input A, B, Cin,
+    output Sum, Cout
+);
+    wire w1, w2, w3;
+
+    half_adder ha1 (.A(A), .B(B), .Sum(w1), .Carry(w2));
+    half_adder ha2 (.A(w1), .B(Cin), .Sum(Sum), .Carry(w3));
+    or (Cout, w2, w3);
+endmodule
+
+
+module tb_serial_adder;
+    reg [3:0] A, B;
+    reg Cin;
+    wire [3:0] Sum;
+    wire Cout;
+
+    serial_adder uut (
+        .A(A), 
+        .B(B), 
+        .Cin(Cin), 
+        .Sum(Sum), 
+        .Cout(Cout)
+    );
+
+    initial begin
+        A = 4'b0001; B = 4'b0010; Cin = 0;
+        #10;
+        A = 4'b0101; B = 4'b0110; Cin = 0;
+        #10;
+        A = 4'b1111; B = 4'b0001; Cin = 0;
+        #10;
+        A = 4'b1010; B = 4'b0101; Cin = 1;
+        #10;
+    end
+endmodule
