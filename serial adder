@@ -1,58 +1,83 @@
-module serial_adder (
-    input [3:0] A, B,
-    input Cin,
-    output [3:0] Sum,
-    output Cout
+
+
+   module serial_adder(
+    input clk,
+    input rst,
+    input a,  // Serial input A
+    input b,  // Serial input B
+    output reg sum, // Serial sum output
+    output reg cout // Carry-out
 );
-    wire c0, c1, c2;
 
-    full_adder fa0 (.A(A[0]), .B(B[0]), .Cin(Cin), .Sum(Sum[0]), .Cout(c0));
-    full_adder fa1 (.A(A[1]), .B(B[1]), .Cin(c0), .Sum(Sum[1]), .Cout(c1));
-    full_adder fa2 (.A(A[2]), .B(B[2]), .Cin(c1), .Sum(Sum[2]), .Cout(c2));
-    full_adder fa3 (.A(A[3]), .B(B[3]), .Cin(c2), .Sum(Sum[3]), .Cout(Cout));
+    reg carry; // Internal carry storage
+
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            sum <= 0;
+            carry <= 0;
+            cout <= 0;
+        end 
+        else begin
+            {carry, sum} <= a + b + carry; // Full adder logic
+            cout <= carry; // Update carry-out
+        end
+    end
+
 endmodule
-module half_adder (
-    input A, B,
-    output Sum, Carry
-);
-    xor (Sum, A, B);
-    and (Carry, A, B);
-endmodule
-
-module full_adder (
-    input A, B, Cin,
-    output Sum, Cout
-);
-    wire w1, w2, w3;
-
-    half_adder ha1 (.A(A), .B(B), .Sum(w1), .Carry(w2));
-    half_adder ha2 (.A(w1), .B(Cin), .Sum(Sum), .Carry(w3));
-    or (Cout, w2, w3);
-endmodule
-
 
 module tb_serial_adder;
-    reg [3:0] A, B;
-    reg Cin;
-    wire [3:0] Sum;
-    wire Cout;
+    reg clk, rst;
+    reg a, b;
+    wire sum, cout;
 
+    // Instantiate the Serial Adder module
     serial_adder uut (
-        .A(A), 
-        .B(B), 
-        .Cin(Cin), 
-        .Sum(Sum), 
-        .Cout(Cout)
+        .clk(clk),
+        .rst(rst),
+        .a(a),
+        .b(b),
+        .sum(sum),
+        .cout(cout)
     );
 
+    reg [3:0] A, B;  // 4-bit registers for inputs
+    integer i;
+
+    // Clock Generation
+    always #5 clk = ~clk;  // 10ns period
+
     initial begin
-        A = 4'b0001; B = 4'b0010; Cin = 0;
-        #10;
-        A = 4'b0101; B = 4'b0110; Cin = 0;
-        #10;
-        A = 4'b1111; B = 4'b0001; Cin = 0;
-        #10;
-        A = 4'b1010; B = 4'b0101; Cin = 1;
-        #10;
+        clk = 0;
+        rst = 1;
+        #10 rst = 0;
+
+        // **Test Case 1: Simple Addition (3 + 5 = 8)**
+        A = 4'b0011; // 3
+        B = 4'b0101; // 5
+        for (i = 0; i < 4; i = i + 1) begin
+            a = A[i];
+            b = B[i];
+            #10;
+        end
+
+        // **Test Case 2: Carry Propagation (7 + 1 = 8)**
+        A = 4'b0111; // 7
+        B = 4'b0001; // 1
+        for (i = 0; i < 4; i = i + 1) begin
+            a = A[i];
+            b = B[i];
+            #10;
+        end
+
+        // **Test Case 3: Overflow Case (15 + 1 = 16)**
+        A = 4'b1111; // 15
+        B = 4'b0001; // 1
+        for (i = 0; i < 4; i = i + 1) begin
+            a = A[i];
+            b = B[i];
+            #10;
+        end
+
+        $finish;
     end
 endmodule
